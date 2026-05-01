@@ -10,6 +10,13 @@ I built this because I realized I spend way too much time staring at my closet e
 ### Challenges I faced
 Getting the background image to blend perfectly with the UI was a headache. I ended up using a mix of CSS filters and backdrop-blurs to get that high-end boutique feel. I also had to figure out how to securely handle API keys so they don't just sit in the code for everyone to see.
 
+## 📸 Project Preview
+
+![Main Dashboard](sitepv1.png)
+
+![AI Styling Results](sitepv2.png)
+
+
 ### What's next?
 I really want to add a feature where you can just take a picture of your shirt and the AI automatically tags the color and fabric. For now, typing it in works, but the "camera" feature is definitely the goal.
 
