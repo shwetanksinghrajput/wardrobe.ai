@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Stylist & Wardrobe</title>
+    <title>Wardrobe AI | Your Personal Stylist</title>
     <style>
         /* Reset & Base Styling */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,8 +15,10 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; 
+            /* THE FIX: Allow scrolling when results are generated */
+            overflow-y: auto; 
             position: relative;
+            padding-bottom: 60px;
         }
         
         /* Premium Background */
@@ -27,26 +29,26 @@
             background-image: url('/static/background_source.png'); 
             background-size: cover; 
             background-position: center;
+            background-attachment: fixed;
             filter: blur(4px); 
             opacity: 0.85; 
             z-index: -1;
         }
         
-        /* HEADER: Adjusted to fit massive logo */
+        /* HEADER: Massive Logo & Text */
         header {
             display: flex;
             align-items: center; 
             padding: 10px 40px 0px 40px; 
         }
         
-        /* THE FIX: Decreased Logo by 25% (240px -> 180px) */
         header img {
             height: 180px; 
             width: auto; 
             object-fit: contain;
             mix-blend-mode: multiply; 
-            margin-right: -15px; /* Keeps the text hugging the logo tightly */
-            margin-top: -10px; /* Adjusted to balance the new smaller size */
+            margin-right: -15px; 
+            margin-top: -10px;
             margin-bottom: -10px;
         }
         
@@ -63,7 +65,7 @@
             max-width: 1600px; 
             margin: 0 auto;
             width: 100%;
-            padding: 10px 40px 40px 40px;
+            padding: 10px 40px;
             flex-grow: 1;
             display: flex;
         }
@@ -155,7 +157,7 @@
         .delete-btn:hover { color: #bf6355; transform: none; background: none; box-shadow: none; }
 
         /* AI Results Box */
-        #ai-results { margin-top: 20px; display: none; animation: fadeIn 0.4s ease-in-out; }
+        #ai-results { margin-top: 20px; padding-bottom: 20px; display: none; animation: fadeIn 0.4s ease-in-out; }
         .result-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #d97a6a; margin-top: 15px; margin-bottom: 5px; }
         .result-text {
             font-size: 14px; line-height: 1.6; color: #4f4644;
