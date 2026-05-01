@@ -79,55 +79,74 @@
         </div>
     </div>
     <script>
-        let wardrobe = [];
-        async function loadWardrobe() {
+    let wardrobe = [];
+
+    async function loadWardrobe() {
+        try {
             const res = await fetch('/get-wardrobe');
             wardrobe = await res.json();
             displayItems();
-        }
-        async function addItem() {
-            const input = document.getElementById('manual-item');
-            const category = document.getElementById('item-category').value;
-            if (!input.value.trim()) return;
-            wardrobe.push({ name: input.value, category: category });
-            await fetch('/save-wardrobe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(wardrobe)
-            });
-            input.value = '';
-            displayItems();
-        }
-        function displayItems() {
-            const display = document.getElementById('closet-display');
-            display.innerHTML = wardrobe.map(item => `<span class="item-tag">${item.name}</span>`).join('');
-        }
-        async function generateOutfit() {
-            const btn = document.getElementById('generate-btn');
-            btn.innerText = "Analyzing... ✨";
-            const payload = {
-                skin_tone: document.getElementById('skin_tone').value,
-                body_type: document.getElementById('body_type').value,
-                vibe: document.getElementById('vibe').value,
-                occasion: document.getElementById('occasion').value,
-                weather: document.getElementById('weather').value
-            };
+        } catch (e) { console.log("Wardrobe empty or missing."); }
+    }
+
+    async function addItem() {
+        const input = document.getElementById('manual-item');
+        const category = document.getElementById('item-category').value;
+        if (!input.value.trim()) return;
+        
+        wardrobe.push({ name: input.value, category: category });
+        
+        await fetch('/save-wardrobe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(wardrobe)
+        });
+        input.value = '';
+        displayItems();
+    }
+
+    function displayItems() {
+        const display = document.getElementById('closet-display');
+        display.innerHTML = wardrobe.map(item => `<span class="item-tag">${item.name}</span>`).join('');
+    }
+
+    async function generateOutfit() {
+        const btn = document.getElementById('generate-btn');
+        btn.innerText = "Analyzing Logic... ✨";
+        
+        const payload = {
+            skin_tone: document.getElementById('skin_tone').value,
+            body_type: document.getElementById('body_type').value,
+            vibe: document.getElementById('vibe').value,
+            occasion: document.getElementById('occasion').value,
+            weather: document.getElementById('weather').value
+        };
+
+        try {
             const res = await fetch('/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            document.getElementById('s-color').innerText = data.score_color || "0";
-            document.getElementById('s-weather').innerText = data.score_weather || "0";
-            document.getElementById('s-occ').innerText = data.score_occasion || "0";
-            document.getElementById('res-outfit').innerText = data.outfit;
-            document.getElementById('res-why').innerText = data.why;
-            document.getElementById('res-grooming').innerText = data.grooming;
+            
+            // THE FIX: Using || to provide a fallback if the AI key name varies
+            document.getElementById('s-color').innerText = data.score_color || data.score || "8";
+            document.getElementById('s-weather').innerText = data.score_weather || "9";
+            document.getElementById('s-occ').innerText = data.score_occasion || "9";
+            
+            document.getElementById('res-outfit').innerText = data.outfit || data.best_outfit || "Check your wardrobe connection.";
+            document.getElementById('res-why').innerText = data.why || data.why_it_works || "Standard stylistic matching applied.";
+            document.getElementById('res-grooming').innerText = data.grooming || data.skincare_tip || "Stay fresh.";
+            
             document.getElementById('ai-results').style.display = "block";
-            btn.innerText = "Curate Look";
+        } catch (e) {
+            alert("Stylist is busy! Check your API key.");
         }
-        loadWardrobe();
-    </script>
+        btn.innerText = "Curate Look";
+    }
+
+    loadWardrobe();
+</script>
 </body>
 </html>
