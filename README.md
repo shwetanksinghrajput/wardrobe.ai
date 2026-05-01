@@ -12,9 +12,9 @@ Getting the background image to blend perfectly with the UI was a headache. I en
 
 ## 📸 Project Preview
 
-![Main Dashboard](static/sitepv1.png)
+![Main Dashboard](static/sitepv2.png)
 
-![AI Styling Results](sitepv2.png)
+![AI Styling Results](static/sitepv1.png)
 
 
 ### What's next?
