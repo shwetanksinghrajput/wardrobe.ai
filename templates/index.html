@@ -1,73 +1,89 @@
-<!-- Replace the #ai-results div in your index.html with this updated version -->
-<div id="ai-results">
-    <div class="result-title">📊 Match Analysis</div>
-    <div id="score-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <!-- Scores will be injected here -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wardrobe AI | Shwetank Singh Rajput</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="glass-card">
+            <h1>Wardrobe AI</h1>
+            <p class="subtitle">Premium Style Logic Engine</p>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>Skin Tone</label>
+                    <select id="skin_tone">
+                        <option>Warm</option>
+                        <option>Cool</option>
+                        <option>Neutral</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Occasion</label>
+                    <select id="occasion">
+                        <option>Casual</option>
+                        <option>Formal</option>
+                        <option>Date Night</option>
+                        <option>Wedding</option>
+                    </select>
+                </div>
+                <button onclick="generateLook()" id="gen-btn">Generate Analysis</button>
+            </div>
+
+            <div id="results" class="results-box" style="display:none;">
+                <div class="score-container">
+                    <div class="score-pill">Color: <span id="s-color"></span>/10</div>
+                    <div class="score-pill">Weather: <span id="s-weather"></span>/10</div>
+                    <div class="score-pill">Style: <span id="s-occ"></span>/10</div>
+                </div>
+                
+                <div class="analysis-grid">
+                    <div class="analysis-item">
+                        <h3>✨ The Look</h3>
+                        <p id="res-outfit"></p>
+                    </div>
+                    <div class="analysis-item">
+                        <h3>🧠 Reasoning</h3>
+                        <p id="res-why"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="result-title">👕 The Look</div>
-    <div class="result-text" id="res-outfit"></div>
-    
-    <div class="result-title">🎨 Palette</div>
-    <div id="res-palette"></div>
-    
-    <div class="result-title">🧠 Strategic Reasoning</div>
-    <div class="result-text" id="res-why"></div>
-    
-    <div class="result-title">🧴 Grooming & Care</div>
-    <div class="result-text" id="res-grooming"></div>
-</div>
-
-<style>
-    /* Add this to your CSS for the Score Pills */
-    .score-pill {
-        flex: 1;
-        background: rgba(255, 255, 255, 0.6);
-        padding: 10px;
-        border-radius: 8px;
-        text-align: center;
-        border: 1px solid rgba(217, 122, 106, 0.2);
-    }
-    .score-val {
-        display: block;
-        font-size: 18px;
-        font-weight: bold;
-        color: #d97a6a;
-    }
-    .score-label {
-        font-size: 9px;
-        text-transform: uppercase;
-        color: #9a908d;
-    }
-</style>
-
-<script>
-// Update your generateOutfit() function's "success" block:
-if (data.error) {
-    alert(data.error);
-} else {
-    // Inject Scores
-    const scoreContainer = document.getElementById('score-container');
-    scoreContainer.innerHTML = `
-        <div class="score-pill"><span class="score-val">${data.scores.color_harmony}/10</span><span class="score-label">Color</span></div>
-        <div class="score-pill"><span class="score-val">${data.scores.weather_suitability}/10</span><span class="score-label">Weather</span></div>
-        <div class="score-pill"><span class="score-val">${data.scores.occasion_fit}/10</span><span class="score-label">Occasion</span></div>
-    `;
-
-    document.getElementById('res-outfit').innerText = data.best_outfit;
-    document.getElementById('res-why').innerText = data.why_it_works;
-    document.getElementById('res-grooming').innerText = `${data.perfume} | ${data.skincare_tip}`;
-    
-    // Palette logic (same as before)
-    const paletteContainer = document.getElementById('res-palette');
-    paletteContainer.innerHTML = ""; 
-    data.color_palette.forEach(color => {
-        const circle = document.createElement('div');
-        circle.className = 'color-circle';
-        circle.style.backgroundColor = color;
-        paletteContainer.appendChild(circle);
-    });
-    
-    resultsBox.style.display = "block";
-}
-</script>
+    <script>
+        async function generateLook() {
+            const btn = document.getElementById('gen-btn');
+            btn.innerText = "Analyzing Logic...";
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        skin_tone: document.getElementById('skin_tone').value,
+                        occasion: document.getElementById('occasion').value
+                    })
+                });
+                const data = await response.json();
+                
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('s-color').innerText = data.score_color || 0;
+                document.getElementById('s-weather').innerText = data.score_weather || 0;
+                document.getElementById('s-occ').innerText = data.score_occasion || 0;
+                document.getElementById('res-outfit').innerText = data.outfit;
+                document.getElementById('res-why').innerText = data.why;
+            } catch (e) {
+                alert("Error connecting to engine.");
+            } finally {
+                btn.innerText = "Generate Analysis";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
