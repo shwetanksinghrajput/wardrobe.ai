@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wardrobe AI | Your Personal Stylist</title>
     <style>
-        /* All your original styling stays exactly the same */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background-color: #fceceb; color: #3b3534; font-family: "Helvetica Neue", Arial, sans-serif; min-height: 100vh; display: flex; flex-direction: column; overflow-y: auto; position: relative; padding-bottom: 60px; }
         body::before { content: ""; position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px; background-image: url('/static/background_source.png'); background-size: cover; background-position: center; background-attachment: fixed; filter: blur(4px); opacity: 0.85; z-index: -1; }
@@ -24,6 +23,9 @@
         input, select { width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(255, 255, 255, 0.8); border: 1px solid #e8ddcf; border-radius: 8px; color: #3b3534; font-size: 14px; }
         label { display: block; font-size: 11px; color: #9a908d; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
         button { width: 100%; padding: 16px; background: linear-gradient(135deg, #e3a398, #d97a6a); color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        .wardrobe-list { margin-top: 10px; max-height: 280px; overflow-y: auto; }
+        .item-tag { display: inline-flex; align-items: center; background: rgba(253, 244, 245, 0.8); color: #bf6355; padding: 8px 16px; border-radius: 30px; font-size: 13px; margin: 4px; border: 1px solid rgba(235, 220, 223, 0.6); }
+        .delete-btn { background: none; border: none; color: #d97a6a; margin-left: 8px; cursor: pointer; font-weight: bold; }
         #ai-results { margin-top: 20px; display: none; }
         .result-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #d97a6a; margin-top: 15px; margin-bottom: 5px; }
         .result-text { font-size: 14px; line-height: 1.6; color: #4f4644; background: rgba(255, 255, 255, 0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.6); }
@@ -34,13 +36,12 @@
         <img src="/static/logo.png" alt="Logo"> 
         <h1>Wardrobe AI</h1>
     </header>
-
     <div class="dashboard-container">
         <div class="dashboard">
             <div class="panel">
                 <h2>Your Collection</h2>
                 <div class="input-group">
-                    <input type="text" id="manual-item" placeholder="e.g., Cream Linen Trousers">
+                    <input type="text" id="manual-item" placeholder="e.g., Black Shirt">
                     <select id="item-category">
                         <option value="Tops">Tops</option>
                         <option value="Bottoms">Bottoms</option>
@@ -49,64 +50,61 @@
                 <button onclick="addItem()">Add to Wardrobe</button>
                 <div class="wardrobe-list" id="closet-display"></div>
             </div>
-
             <div class="panel">
                 <h2>The Stylist</h2>
                 <div class="settings-box">
                     <p class="settings-title">Permanent Profile</p>
                     <div class="input-group">
-                        <div style="flex:1">
-                            <label>Skin Tone</label>
-                            <input type="text" id="skin_tone" placeholder="e.g. Olive">
-                        </div>
-                        <div style="flex:1">
-                            <label>Body Type</label>
-                            <input type="text" id="body_type" placeholder="e.g. Athletic">
-                        </div>
-                        <div style="flex:1">
-                            <label>Vibe</label>
-                            <input type="text" id="vibe" placeholder="e.g. Old Money">
-                        </div>
+                        <div style="flex:1"><label>Skin Tone</label><input type="text" id="skin_tone" placeholder="Olive"></div>
+                        <div style="flex:1"><label>Body Type</label><input type="text" id="body_type" placeholder="Athletic"></div>
+                        <div style="flex:1"><label>Vibe</label><input type="text" id="vibe" placeholder="Casual"></div>
                     </div>
                 </div>
-                
                 <div class="input-group">
-                    <div style="flex:1">
-                        <label>Occasion</label>
-                        <input type="text" id="occasion" placeholder="e.g. Wedding">
-                    </div>
-                    <div style="flex:1">
-                        <label>Weather</label>
-                        <input type="text" id="weather" placeholder="e.g. Rainy, 22°C">
-                    </div>
+                    <div style="flex:1"><label>Occasion</label><input type="text" id="occasion" placeholder="Party"></div>
+                    <div style="flex:1"><label>Weather</label><input type="text" id="weather" placeholder="Hot, 30°C"></div>
                 </div>
-                
                 <button id="generate-btn" onclick="generateOutfit()">Curate Look</button>
-
                 <div id="ai-results">
                     <div class="score-container">
                         <div class="score-pill">Color Match: <span id="s-color"></span>/10</div>
                         <div class="score-pill">Weather Sync: <span id="s-weather"></span>/10</div>
                         <div class="score-pill">Occasion Fit: <span id="s-occ"></span>/10</div>
                     </div>
-                    <div class="result-title">👕 The Look</div>
-                    <div class="result-text" id="res-outfit"></div>
-                    <div class="result-title">🧠 Strategic Reasoning</div>
-                    <div class="result-text" id="res-why"></div>
-                    <div class="result-title">🧴 Grooming & Care</div>
-                    <div class="result-text" id="res-grooming"></div>
+                    <div class="result-title">👕 The Look</div><div class="result-text" id="res-outfit"></div>
+                    <div class="result-title">🧠 Strategic Reasoning</div><div class="result-text" id="res-why"></div>
+                    <div class="result-title">🧴 Grooming & Care</div><div class="result-text" id="res-grooming"></div>
                 </div>
             </div>
         </div>
     </div>
-
     <script>
+        let wardrobe = [];
+        async function loadWardrobe() {
+            const res = await fetch('/get-wardrobe');
+            wardrobe = await res.json();
+            displayItems();
+        }
+        async function addItem() {
+            const input = document.getElementById('manual-item');
+            const category = document.getElementById('item-category').value;
+            if (!input.value.trim()) return;
+            wardrobe.push({ name: input.value, category: category });
+            await fetch('/save-wardrobe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(wardrobe)
+            });
+            input.value = '';
+            displayItems();
+        }
+        function displayItems() {
+            const display = document.getElementById('closet-display');
+            display.innerHTML = wardrobe.map(item => `<span class="item-tag">${item.name}</span>`).join('');
+        }
         async function generateOutfit() {
             const btn = document.getElementById('generate-btn');
-            const resultsBox = document.getElementById('ai-results');
-            btn.innerText = "Analyzing Logic... ✨";
-            btn.disabled = true;
-
+            btn.innerText = "Analyzing... ✨";
             const payload = {
                 skin_tone: document.getElementById('skin_tone').value,
                 body_type: document.getElementById('body_type').value,
@@ -114,26 +112,22 @@
                 occasion: document.getElementById('occasion').value,
                 weather: document.getElementById('weather').value
             };
-
-            try {
-                const res = await fetch('/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                
-                document.getElementById('s-color').innerText = data.score_color || "0";
-                document.getElementById('s-weather').innerText = data.score_weather || "0";
-                document.getElementById('s-occ').innerText = data.score_occasion || "0";
-                document.getElementById('res-outfit').innerText = data.outfit;
-                document.getElementById('res-why').innerText = data.why;
-                document.getElementById('res-grooming').innerText = data.grooming;
-                resultsBox.style.display = "block";
-            } catch (e) { alert("Stylist error!"); }
+            const res = await fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            document.getElementById('s-color').innerText = data.score_color || "0";
+            document.getElementById('s-weather').innerText = data.score_weather || "0";
+            document.getElementById('s-occ').innerText = data.score_occasion || "0";
+            document.getElementById('res-outfit').innerText = data.outfit;
+            document.getElementById('res-why').innerText = data.why;
+            document.getElementById('res-grooming').innerText = data.grooming;
+            document.getElementById('ai-results').style.display = "block";
             btn.innerText = "Curate Look";
-            btn.disabled = false;
         }
+        loadWardrobe();
     </script>
 </body>
 </html>
