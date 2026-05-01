@@ -41,42 +41,40 @@ def generate():
     wardrobe = load_wardrobe()
     
     prompt = f"""
-    User Profile: Skin {data.get('skin_tone')}, Body {data.get('body_type')}, Vibe {data.get('vibe')}.
-    Occasion: {data.get('occasion')}, Weather: {data.get('weather')}.
-    Wardrobe Items: {json.dumps(wardrobe)}
-    
-    TASK: Create a professional outfit using the items above.
-    REQUIRED JSON FORMAT (Return ONLY raw JSON, no extra text):
-    {{
-        "outfit": "detailed description of the outfit",
-        "why": "strategic reasoning for these choices",
-        "grooming": "specific grooming or accessory tip",
-        "score_color": 9,
-        "score_weather": 8,
-        "score_occasion": 9
-    }}
+    Return ONLY raw JSON. No markdown, no 'here is your outfit', no preamble.
+    WARDROBE: {json.dumps(wardrobe)}
+    OCCASION: {data.get('occasion')}
+    TASK: Suggest an outfit from the wardrobe.
+    JSON structure: 
+    {{"outfit": "...", "why": "...", "grooming": "...", "score_color": 10, "score_weather": 10, "score_occasion": 10}}
     """
     
     try:
         response = model.generate_content(prompt)
-        text = response.text.strip()
+        raw_text = response.text.strip()
         
-        # Line 89 FIX: Clean up markdown and extra quotes
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0].strip()
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0].strip()
-            
-        result = json.loads(text)
+        # LOG THE RAW RESPONSE: This lets us see exactly what Gemini said in Render Logs
+        print(f"RAW AI RESPONSE: {raw_text}")
+
+        # Aggressive cleaning
+        cleaned_text = raw_text.replace('```json', '').replace('```', '').strip()
+        
+        # Find the first '{' and last '}' just in case there's extra text
+        start = cleaned_text.find('{')
+        end = cleaned_text.rfind('}') + 1
+        if start != -1 and end != 0:
+            cleaned_text = cleaned_text[start:end]
+
+        result = json.loads(cleaned_text)
         return json.dumps(result)
         
     except Exception as e:
-        # Emergency Fallback so UI never shows "undefined"
+        print(f"PARSING ERROR: {str(e)}")
         return json.dumps({
-            "outfit": "A classic ensemble featuring your favorite pieces.",
-            "why": "Standard stylistic principles of color coordination.",
-            "grooming": "Maintain a clean, polished look for the occasion.",
-            "score_color": 8, "score_weather": 8, "score_occasion": 8
+            "outfit": f"AI Error: {str(e)[:50]}",
+            "why": "Check Render logs for 'RAW AI RESPONSE'.",
+            "grooming": "Parsing failed.",
+            "score_color": 0, "score_weather": 0, "score_occasion": 0
         })
 
 if __name__ == '__main__':
