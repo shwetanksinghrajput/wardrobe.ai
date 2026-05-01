@@ -1,96 +1,119 @@
-import os
+from flask import Flask, render_template, request, jsonify
 import json
-import traceback
-from flask import Flask, render_template, request
-import google.generativeai as genai
+import os
+import requests
 
 app = Flask(__name__)
 
-# Setup Gemini - Using 'gemini-pro' for guaranteed Free Tier stability
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-pro')
+# --- CONFIGURATION ---
+# Replace Plan B with your real AIzaSy... key for local testing.
+API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_LOCAL_TESTING_KEY_HERE") 
+MODEL = "gemini-3-flash-preview"
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
+WARDROBE_FILE = "wardrobe.json"
 
-WARDROBE_FILE = 'wardrobe.json'
-
+# --- DATABASE HELPERS ---
 def load_wardrobe():
-    if os.path.exists(WARDROBE_FILE):
-        try:
-            with open(WARDROBE_FILE, 'r') as f:
-                data = json.load(f)
-                return data if isinstance(data, list) else []
-        except Exception as e:
-            print(f"DEBUG: Wardrobe load error: {e}")
-            return []
-    return []
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/get-wardrobe')
-def get_wardrobe():
-    return json.dumps(load_wardrobe())
-
-@app.route('/save-wardrobe', methods=['POST'])
-def save_wardrobe():
-    data = request.json
-    with open(WARDROBE_FILE, 'w') as f:
-        json.dump(data, f)
-    return json.dumps({"status": "success"})
-
-@app.route('/generate', methods=['POST'])
-def generate():
-    data = request.json
-    wardrobe = load_wardrobe()
-    
-    # Strict prompt to force clean JSON
-    prompt = f"""
-    Return ONLY raw JSON. No markdown, no intro.
-    USER: Skin {data.get('skin_tone')}, Body {data.get('body_type')}, Vibe {data.get('vibe')}.
-    CONTEXT: {data.get('occasion')} in {data.get('weather')}.
-    WARDROBE: {json.dumps(wardrobe)}
-    
-    JSON FORMAT:
-    {{
-        "outfit": "description",
-        "why": "reasoning",
-        "grooming": "tip",
-        "score_color": 10,
-        "score_weather": 10,
-        "score_occasion": 10
-    }}
-    """
-    
+    default_structure = {"Tops": [], "Bottoms": [], "Shoes": [], "Accessories": []}
+    if not os.path.exists(WARDROBE_FILE): return default_structure
     try:
-        print("DEBUG: Sending request to Gemini...")
-        response = model.generate_content(prompt)
-        raw_text = response.text.strip()
-        
-        # This will show up in your Render Logs so we can see the "Look"
-        print(f"DEBUG: AI RESPONSE: {raw_text}")
-        
-        # Extract JSON if Gemini adds backticks or chatter
-        if "{" in raw_text:
-            cleaned_text = raw_text[raw_text.find("{"):raw_text.rfind("}")+1]
-        else:
-            cleaned_text = raw_text
-            
-        result = json.loads(cleaned_text)
-        return json.dumps(result)
-        
-    except Exception as e:
-        # Full error reporting
-        error_msg = str(e)
-        print(f"DEBUG: ERROR OCCURRED: {error_msg}")
-        print(traceback.format_exc())
-        
-        return json.dumps({
-            "outfit": f"Technical Issue: {error_msg[:50]}",
-            "why": "Check Render logs for the full DEBUG message.",
-            "grooming": "Please refresh and try again.",
-            "score_color": 0, "score_weather": 0, "score_occasion": 0
-        })
+        with open(WARDROBE_FILE, "r") as f:
+            data = json.load(f)
+            # Migration: If it's the old flat list, put everything in 'Tops'
+            if isinstance(data.get("items"), list):
+                old_list = data.get("items", [])
+                return {"Tops": old_list, "Bottoms": [], "Shoes": [], "Accessories": []}
+            return data.get("items", default_structure)
+    except:
+        return default_structure
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+def save_wardrobe(items):
+    with open(WARDROBE_FILE, "w") as f: json.dump({"items": items}, f)
+
+# --- AI HELPER ---
+def call_ai(prompt):
+    try:
+        response = requests.post(
+            URL,
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"response_mime_type": "application/json"} 
+            },
+            timeout=25
+        )
+        data = response.json()
+        if "error" in data:
+            print("API Error:", data["error"])
+            return None
+            
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
+        text = text.strip().replace("```json", "").replace("```", "")
+        return json.loads(text)
+    except Exception as e:
+        print("AI Request Failed:", e)
+        return None
+
+# --- WEB ROUTES ---
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/get-wardrobe", methods=["GET"])
+def get_wardrobe_api():
+    return jsonify({"items": load_wardrobe()})
+
+@app.route("/save-wardrobe", methods=["POST"])
+def save_wardrobe_api():
+    items = request.json.get("items", {})
+    save_wardrobe(items)
+    return jsonify({"status": "Success"})
+
+@app.route("/generate", methods=["POST"])
+def generate_style():
+    data = request.json
+    wardrobe_dict = load_wardrobe()
+    
+    is_empty = all(len(items) == 0 for items in wardrobe_dict.values())
+    if is_empty:
+        return jsonify({"error": "Your closet is empty. Add some clothes first!"})
+
+    wardrobe_text = ""
+    for category, items in wardrobe_dict.items():
+        if items: wardrobe_text += f"{category}: {', '.join(items)}. "
+
+    occasion = data.get("occasion", "Casual hanging out")
+    weather = data.get("weather", "Mild")
+    skin_tone = data.get("skin_tone", "Olive")
+    body_type = data.get("body_type", "Athletic")
+    vibe = data.get("vibe", "Old Money")
+
+    prompt = f"""
+    You are a high-end men's fashion stylist.
+    Wardrobe: {wardrobe_text}
+    Occasion: {occasion}
+    Weather: {weather}
+    User profile -> Skin tone: {skin_tone}, Body Type: {body_type}, Style vibe: {vibe}
+
+    Return ONLY JSON matching this format exactly. DO NOT use markdown, just raw JSON:
+    {{
+      "best_outfit": "Detailed description of the best outfit combination",
+      "color_palette": ["#HEXCODE1", "#HEXCODE2", "#HEXCODE3"],
+      "why_it_works": "Why these colors match the skin tone and occasion",
+      "perfume": "Fragrance type suggestion",
+      "skincare_tip": "One quick grooming/skincare tip"
+    }}
+    Rules: 
+    - Use ONLY items from the provided Wardrobe for the outfit.
+    - color_palette MUST contain exactly 3 or 4 valid hex color codes representing the outfit (e.g., ["#000080", "#F5F5DC", "#FFFFFF"]). Do not leave this empty.
+    """
+
+    result = call_ai(prompt)
+    
+    if not result:
+        return jsonify({"error": "AI is thinking too hard. Try again!"})
+
+    return jsonify(result)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
