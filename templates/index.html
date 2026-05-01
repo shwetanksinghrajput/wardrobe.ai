@@ -87,77 +87,93 @@
     </div>
 
     <script>
-        let wardrobe = [];
+    let wardrobe = [];
 
-        async function loadWardrobe() {
-            try {
-                const res = await fetch('/get-wardrobe');
-                wardrobe = await res.json();
-                displayItems();
-            } catch (e) { console.log("Wardrobe initialization."); }
+    // 1. Load the wardrobe when the page opens
+    async function loadWardrobe() {
+        try {
+            const res = await fetch('/get-wardrobe');
+            const data = await res.json();
+            // Handle both array and object formats to be safe
+            wardrobe = Array.isArray(data) ? data : [];
+            displayItems();
+        } catch (e) {
+            console.log("Empty wardrobe initialized.");
         }
+    }
 
-        async function addItem() {
-            const input = document.getElementById('manual-item');
-            const category = document.getElementById('item-category').value;
-            if (!input.value.trim()) return;
-            
-            wardrobe.push({ "name": input.value.trim(), "category": category });
-            
-            await fetch('/save-wardrobe', {
+    // 2. The Add Button Logic
+    async function addItem() {
+        const input = document.getElementById('manual-item');
+        const category = document.getElementById('item-category').value;
+        const itemName = input.value.trim();
+        
+        if (!itemName) return;
+        
+        // Add to our local list
+        wardrobe.push({ "name": itemName, "category": category });
+        
+        // Send to the server
+        await fetch('/save-wardrobe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(wardrobe)
+        });
+        
+        input.value = '';
+        displayItems();
+    }
+
+    // 3. Show the items on screen
+    function displayItems() {
+        const display = document.getElementById('closet-display');
+        if (!wardrobe || wardrobe.length === 0) {
+            display.innerHTML = "<p style='color: #9a908d;'>Your wardrobe is currently empty.</p>";
+            return;
+        }
+        display.innerHTML = wardrobe.map(item => 
+            `<span class="item-tag">${item.name}</span>`
+        ).join('');
+    }
+
+    // 4. Generate the AI Outfit
+    async function generateOutfit() {
+        const btn = document.getElementById('generate-btn');
+        btn.innerText = "Analyzing... ✨";
+        
+        const payload = {
+            skin_tone: document.getElementById('skin_tone').value,
+            body_type: document.getElementById('body_type').value,
+            vibe: document.getElementById('vibe').value,
+            occasion: document.getElementById('occasion').value,
+            weather: document.getElementById('weather').value
+        };
+
+        try {
+            const res = await fetch('/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(wardrobe)
+                body: JSON.stringify(payload)
             });
-            input.value = '';
-            displayItems();
-        }
-
-        function displayItems() {
-            const display = document.getElementById('closet-display');
-            if (!wardrobe || wardrobe.length === 0) {
-                display.innerHTML = "<p style='color: #9a908d;'>Your wardrobe is currently empty.</p>";
-                return;
-            }
-            display.innerHTML = wardrobe.map(item => 
-                `<span class="item-tag">${item.name} <small style="opacity:0.5; font-size:9px;">(${item.category})</small></span>`
-            ).join('');
-        }
-
-        async function generateOutfit() {
-            const btn = document.getElementById('generate-btn');
-            btn.innerText = "Analyzing Logic... ✨";
+            const data = await res.json();
             
-            const payload = {
-                skin_tone: document.getElementById('skin_tone').value,
-                body_type: document.getElementById('body_type').value,
-                vibe: document.getElementById('vibe').value,
-                occasion: document.getElementById('occasion').value,
-                weather: document.getElementById('weather').value
-            };
-
-            try {
-                const res = await fetch('/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                
-                document.getElementById('s-color').innerText = data.score_color || "8";
-                document.getElementById('s-weather').innerText = data.score_weather || "9";
-                document.getElementById('s-occ').innerText = data.score_occasion || "9";
-                
-                document.getElementById('res-outfit').innerText = data.outfit || "Outfit styled.";
-                document.getElementById('res-why').innerText = data.why || "Logic applied.";
-                document.getElementById('res-grooming').innerText = data.grooming || "Stay fresh.";
-                
-                document.getElementById('ai-results').style.display = "block";
-            } catch (e) { alert("Stylist error!"); }
-            btn.innerText = "Curate Look";
+            // Fill the slots
+            document.getElementById('s-color').innerText = data.score_color || "8";
+            document.getElementById('s-weather').innerText = data.score_weather || "9";
+            document.getElementById('s-occ').innerText = data.score_occasion || "9";
+            document.getElementById('res-outfit').innerText = data.outfit || "Outfit Curated.";
+            document.getElementById('res-why').innerText = data.why || "Logic Applied.";
+            document.getElementById('res-grooming').innerText = data.grooming || "Stay Fresh.";
+            
+            document.getElementById('ai-results').style.display = "block";
+        } catch (e) {
+            alert("Stylist is busy. Try again!");
         }
+        btn.innerText = "Curate Look";
+    }
 
-        loadWardrobe();
-    </script>
+    // Run this automatically on start
+    loadWardrobe();
+</script>
 </body>
 </html>
