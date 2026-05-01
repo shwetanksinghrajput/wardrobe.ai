@@ -1,379 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wardrobe AI | Your Personal Stylist</title>
-    <style>
-        /* Reset & Base Styling */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background-color: #fceceb; 
-            color: #3b3534; 
-            font-family: "Helvetica Neue", Arial, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            /* THE FIX: Allow scrolling when results are generated */
-            overflow-y: auto; 
-            position: relative;
-            padding-bottom: 60px;
-        }
-        
-        /* Premium Background */
-        body::before {
-            content: "";
-            position: absolute;
-            top: -10px; left: -10px; right: -10px; bottom: -10px; 
-            background-image: url('/static/background_source.png'); 
-            background-size: cover; 
-            background-position: center;
-            background-attachment: fixed;
-            filter: blur(4px); 
-            opacity: 0.85; 
-            z-index: -1;
-        }
-        
-        /* HEADER: Massive Logo & Text */
-        header {
-            display: flex;
-            align-items: center; 
-            padding: 10px 40px 0px 40px; 
-        }
-        
-        header img {
-            height: 180px; 
-            width: auto; 
-            object-fit: contain;
-            mix-blend-mode: multiply; 
-            margin-right: -15px; 
-            margin-top: -10px;
-            margin-bottom: -10px;
-        }
-        
-        h1 {
-            font-family: "Georgia", serif;
-            font-size: 42px; 
-            color: #d97a6a;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-        }
-
-        /* DASHBOARD */
-        .dashboard-container {
-            max-width: 1600px; 
-            margin: 0 auto;
-            width: 100%;
-            padding: 10px 40px;
-            flex-grow: 1;
-            display: flex;
-        }
-
-        .dashboard {
-            display: flex;
-            gap: 40px;
-            width: 100%;
-            align-items: stretch;
-        }
-
-        /* Frosted Glass Panels */
-        .panel {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.50); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.7); 
-            border-radius: 16px;
-            padding: 30px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-        }
-        
-        .panel h2 {
-            font-family: "Georgia", serif;
-            font-size: 24px;
-            color: #d97a6a; 
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(217, 122, 106, 0.3);
-            padding-bottom: 15px;
-            letter-spacing: 1px;
-        }
-
-        /* Settings Box */
-        .settings-box {
-            background: rgba(255, 255, 255, 0.4);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            margin-bottom: 20px;
-        }
-        .settings-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #9a908d; margin-bottom: 10px; }
-
-        /* Input Styling */
-        .input-group { display: flex; gap: 15px; margin-bottom: 5px; }
-        input, select {
-            width: 100%; padding: 12px; margin-bottom: 15px;
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid #e8ddcf; border-radius: 8px;
-            color: #3b3534; font-size: 14px; transition: all 0.3s;
-        }
-        input:focus, select:focus {
-            outline: none; border-color: #d97a6a;
-            box-shadow: 0 0 10px rgba(217, 122, 106, 0.15);
-        }
-        input::placeholder { color: #9a908d; }
-        label { display: block; font-size: 11px; color: #9a908d; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
-
-        /* Premium Buttons */
-        button {
-            width: 100%; padding: 16px;
-            background: linear-gradient(135deg, #e3a398, #d97a6a); 
-            color: #fff; font-weight: bold; font-size: 14px;
-            border: none; border-radius: 8px; cursor: pointer;
-            transition: 0.3s; text-transform: uppercase; letter-spacing: 2px;
-            box-shadow: 0 4px 15px rgba(217, 122, 106, 0.25);
-        }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(217, 122, 106, 0.4);
-            background: linear-gradient(135deg, #d97a6a, #bf6355);
-        }
-        button:disabled { background: #dcd3ce; color: #9a908d; cursor: not-allowed; box-shadow: none; transform: none;}
-
-        /* Digital Closet Display */
-        .wardrobe-list { margin-top: 10px; max-height: 280px; overflow-y: auto; }
-        .item-tag {
-            display: inline-flex; align-items: center;
-            background: rgba(253, 244, 245, 0.8); color: #bf6355;
-            padding: 8px 16px; border-radius: 30px;
-            font-size: 13px; margin: 4px; border: 1px solid rgba(235, 220, 223, 0.6);
-            transition: 0.2s;
-        }
-        .item-tag:hover { border-color: #d97a6a; background: #faebee; }
-        .delete-btn {
-            background: none; border: none; color: #d97a6a;
-            margin-left: 8px; cursor: pointer; font-weight: bold;
-            font-size: 14px; padding: 0; width: auto; box-shadow: none;
-        }
-        .delete-btn:hover { color: #bf6355; transform: none; background: none; box-shadow: none; }
-
-        /* AI Results Box */
-        #ai-results { margin-top: 20px; padding-bottom: 20px; display: none; animation: fadeIn 0.4s ease-in-out; }
-        .result-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #d97a6a; margin-top: 15px; margin-bottom: 5px; }
-        .result-text {
-            font-size: 14px; line-height: 1.6; color: #4f4644;
-            background: rgba(255, 255, 255, 0.6); padding: 15px; border-radius: 8px;
-            border-left: 3px solid #d97a6a; border: 1px solid rgba(255, 255, 255, 0.6);
-        }
-
-        #res-palette { display: flex; gap: 10px; margin: 10px 0; }
-        .color-circle {
-            width: 40px; height: 40px; border-radius: 50%;
-            border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            transition: transform 0.2s;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-</head>
-<body>
-
-    <header>
-        <img src="/static/logo.png" alt="Logo" onerror="this.style.display='none'"> 
-        <h1>Wardrobe AI</h1>
-    </header>
-
-    <div class="dashboard-container">
-        <div class="dashboard">
-            
-            <div class="panel">
-                <h2>Your Collection</h2>
-                <div class="input-group">
-                    <input type="text" id="manual-item" placeholder="e.g., Cream Linen Trousers" style="flex: 2;">
-                    <select id="item-category" style="flex: 1;">
-                        <option value="Tops">Tops</option>
-                        <option value="Bottoms">Bottoms</option>
-                        <option value="Shoes">Shoes</option>
-                        <option value="Accessories">Accessories</option>
-                    </select>
-                </div>
-                <button onclick="addItem()">Add to Wardrobe</button>
-                <div class="wardrobe-list" id="closet-display">
-                    <p style="color: #9a908d; font-style: italic;">Loading your collection...</p>
-                </div>
-            </div>
-
-            <div class="panel">
-                <h2>The Stylist</h2>
-                <div class="settings-box">
-                    <p class="settings-title">Permanent Profile</p>
-                    <div class="input-group">
-                        <div>
-                            <label>Skin Tone</label>
-                            <input type="text" id="skin_tone" placeholder="Olive" onchange="saveProfile()">
-                        </div>
-                        <div>
-                            <label>Body Type</label>
-                            <input type="text" id="body_type" placeholder="Athletic" onchange="saveProfile()">
-                        </div>
-                        <div>
-                            <label>Style Vibe</label>
-                            <input type="text" id="vibe" placeholder="Old Money" onchange="saveProfile()">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="input-group">
-                    <div style="flex: 1;">
-                        <label>Occasion</label>
-                        <input type="text" id="occasion" placeholder="Summer Wedding">
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Weather</label>
-                        <input type="text" id="weather" placeholder="Breezy, 75°F">
-                    </div>
-                </div>
-                
-                <button id="generate-btn" onclick="generateOutfit()">Curate Look</button>
-
-                <div id="ai-results">
-                    <div class="result-title">👕 The Look</div>
-                    <div class="result-text" id="res-outfit"></div>
-                    <div class="result-title">🎨 Palette</div>
-                    <div id="res-palette"></div>
-                    <div class="result-title">🧠 Why it works</div>
-                    <div class="result-text" id="res-why"></div>
-                    <div class="result-title">🧴 Grooming</div>
-                    <div class="result-text" id="res-grooming"></div>
-                </div>
-            </div>
-
-        </div>
+<!-- Replace the #ai-results div in your index.html with this updated version -->
+<div id="ai-results">
+    <div class="result-title">📊 Match Analysis</div>
+    <div id="score-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <!-- Scores will be injected here -->
     </div>
 
-    <script>
-        let currentWardrobe = {};
+    <div class="result-title">👕 The Look</div>
+    <div class="result-text" id="res-outfit"></div>
+    
+    <div class="result-title">🎨 Palette</div>
+    <div id="res-palette"></div>
+    
+    <div class="result-title">🧠 Strategic Reasoning</div>
+    <div class="result-text" id="res-why"></div>
+    
+    <div class="result-title">🧴 Grooming & Care</div>
+    <div class="result-text" id="res-grooming"></div>
+</div>
 
-        function loadProfile() {
-            document.getElementById('skin_tone').value = localStorage.getItem('aiw_skin_tone') || '';
-            document.getElementById('body_type').value = localStorage.getItem('aiw_body_type') || '';
-            document.getElementById('vibe').value = localStorage.getItem('aiw_vibe') || '';
-        }
+<style>
+    /* Add this to your CSS for the Score Pills */
+    .score-pill {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.6);
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid rgba(217, 122, 106, 0.2);
+    }
+    .score-val {
+        display: block;
+        font-size: 18px;
+        font-weight: bold;
+        color: #d97a6a;
+    }
+    .score-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        color: #9a908d;
+    }
+</style>
 
-        function saveProfile() {
-            localStorage.setItem('aiw_skin_tone', document.getElementById('skin_tone').value);
-            localStorage.setItem('aiw_body_type', document.getElementById('body_type').value);
-            localStorage.setItem('aiw_vibe', document.getElementById('vibe').value);
-        }
+<script>
+// Update your generateOutfit() function's "success" block:
+if (data.error) {
+    alert(data.error);
+} else {
+    // Inject Scores
+    const scoreContainer = document.getElementById('score-container');
+    scoreContainer.innerHTML = `
+        <div class="score-pill"><span class="score-val">${data.scores.color_harmony}/10</span><span class="score-label">Color</span></div>
+        <div class="score-pill"><span class="score-val">${data.scores.weather_suitability}/10</span><span class="score-label">Weather</span></div>
+        <div class="score-pill"><span class="score-val">${data.scores.occasion_fit}/10</span><span class="score-label">Occasion</span></div>
+    `;
 
-        async function loadWardrobe() {
-            const res = await fetch('/get-wardrobe');
-            const data = await res.json();
-            currentWardrobe = data.items;
-            displayItems();
-        }
-
-        async function addItem() {
-            const input = document.getElementById('manual-item');
-            const category = document.getElementById('item-category').value;
-            const itemName = input.value.trim();
-            if (!itemName) return;
-
-            if (!currentWardrobe[category]) currentWardrobe[category] = [];
-            currentWardrobe[category].push(itemName);
-
-            await syncWardrobe();
-            input.value = '';
-        }
-
-        async function removeItem(category, index) {
-            currentWardrobe[category].splice(index, 1);
-            await syncWardrobe();
-        }
-
-        async function syncWardrobe() {
-            await fetch('/save-wardrobe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: currentWardrobe })
-            });
-            displayItems();
-        }
-
-        function displayItems() {
-            const display = document.getElementById('closet-display');
-            display.innerHTML = '';
-            let isEmpty = true;
-
-            for (const [category, items] of Object.entries(currentWardrobe)) {
-                if (items && items.length > 0) {
-                    isEmpty = false;
-                    let sectionHtml = `<div style="margin-bottom: 15px;"><h4 style="font-size: 11px; text-transform: uppercase; color: #9a908d; margin-bottom: 8px; border-bottom: 1px dashed rgba(235, 225, 213, 0.4); padding-bottom: 4px;">${category}</h4><div>`;
-                    items.forEach((item, index) => {
-                        sectionHtml += `<span class="item-tag">${item} <button class="delete-btn" onclick="removeItem('${category}', ${index})">×</button></span>`;
-                    });
-                    sectionHtml += `</div></div>`;
-                    display.innerHTML += sectionHtml;
-                }
-            }
-            if (isEmpty) { display.innerHTML = "<p style='color: #9a908d;'>Your wardrobe is currently empty.</p>"; }
-        }
-
-        async function generateOutfit() {
-            const btn = document.getElementById('generate-btn');
-            const resultsBox = document.getElementById('ai-results');
-            
-            btn.innerText = "Curating your look... ✨";
-            btn.disabled = true;
-            resultsBox.style.display = "none";
-
-            const payload = {
-                occasion: document.getElementById('occasion').value,
-                weather: document.getElementById('weather').value,
-                skin_tone: document.getElementById('skin_tone').value,
-                body_type: document.getElementById('body_type').value,
-                vibe: document.getElementById('vibe').value
-            };
-
-            try {
-                const res = await fetch('/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-
-                if (data.error) {
-                    alert(data.error);
-                } else {
-                    document.getElementById('res-outfit').innerText = data.best_outfit;
-                    document.getElementById('res-why').innerText = data.why_it_works;
-                    document.getElementById('res-grooming').innerText = data.perfume + " | " + data.skincare_tip;
-                    
-                    const paletteContainer = document.getElementById('res-palette');
-                    paletteContainer.innerHTML = ""; 
-                    if (data.color_palette && Array.isArray(data.color_palette)) {
-                        data.color_palette.forEach(color => {
-                            if (color.startsWith('#')) {
-                                const circle = document.createElement('div');
-                                circle.className = 'color-circle';
-                                circle.style.backgroundColor = color;
-                                circle.title = color; 
-                                paletteContainer.appendChild(circle);
-                            }
-                        });
-                    }
-                    resultsBox.style.display = "block";
-                }
-            } catch (e) {
-                alert("Something went wrong communicating with the stylist.");
-            }
-
-            btn.innerText = "Curate Look";
-            btn.disabled = false;
-        }
-
-        loadProfile();
-        loadWardrobe();
-    </script>
-</body>
-</html>
+    document.getElementById('res-outfit').innerText = data.best_outfit;
+    document.getElementById('res-why').innerText = data.why_it_works;
+    document.getElementById('res-grooming').innerText = `${data.perfume} | ${data.skincare_tip}`;
+    
+    // Palette logic (same as before)
+    const paletteContainer = document.getElementById('res-palette');
+    paletteContainer.innerHTML = ""; 
+    data.color_palette.forEach(color => {
+        const circle = document.createElement('div');
+        circle.className = 'color-circle';
+        circle.style.backgroundColor = color;
+        paletteContainer.appendChild(circle);
+    });
+    
+    resultsBox.style.display = "block";
+}
+</script>
