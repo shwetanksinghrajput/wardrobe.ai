@@ -3,87 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wardrobe AI | Shwetank Singh Rajput</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Wardrobe AI | Your Personal Stylist</title>
+    <style>
+        /* Reset & Base Styling */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background-color: #fceceb; 
+            color: #3b3534; 
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; 
+            position: relative;
+            padding-bottom: 60px;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px; 
+            background-image: url('/static/background_source.png'); 
+            background-size: cover; 
+            background-position: center;
+            background-attachment: fixed;
+            filter: blur(4px); 
+            opacity: 0.85; 
+            z-index: -1;
+        }
+        
+        header { display: flex; align-items: center; padding: 10px 40px 0px 40px; }
+        header img { height: 180px; width: auto; object-fit: contain; mix-blend-mode: multiply; margin-right: -15px; margin-top: -10px; margin-bottom: -10px; }
+        h1 { font-family: "Georgia", serif; font-size: 42px; color: #d97a6a; letter-spacing: 3px; text-transform: uppercase; }
+
+        .dashboard-container { max-width: 1600px; margin: 0 auto; width: 100%; padding: 10px 40px; flex-grow: 1; display: flex; }
+        .dashboard { display: flex; gap: 40px; width: 100%; align-items: stretch; }
+
+        .panel { flex: 1; background: rgba(255, 255, 255, 0.50); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 16px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .panel h2 { font-family: "Georgia", serif; font-size: 24px; color: #d97a6a; margin-bottom: 20px; border-bottom: 1px solid rgba(217, 122, 106, 0.3); padding-bottom: 15px; letter-spacing: 1px; }
+
+        .settings-box { background: rgba(255, 255, 255, 0.4); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.6); margin-bottom: 20px; }
+        .settings-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #9a908d; margin-bottom: 10px; }
+
+        /* Scoring UI Styling */
+        .score-container { display: flex; gap: 10px; margin: 15px 0; }
+        .score-pill { background: rgba(217, 122, 106, 0.1); border: 1px solid rgba(217, 122, 106, 0.3); color: #d97a6a; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+        .input-group { display: flex; gap: 15px; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(255, 255, 255, 0.8); border: 1px solid #e8ddcf; border-radius: 8px; color: #3b3534; font-size: 14px; }
+        button { width: 100%; padding: 16px; background: linear-gradient(135deg, #e3a398, #d97a6a); color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        button:disabled { background: #dcd3ce; cursor: not-allowed; }
+
+        .wardrobe-list { margin-top: 10px; max-height: 280px; overflow-y: auto; }
+        .item-tag { display: inline-flex; align-items: center; background: rgba(253, 244, 245, 0.8); color: #bf6355; padding: 8px 16px; border-radius: 30px; font-size: 13px; margin: 4px; border: 1px solid rgba(235, 220, 223, 0.6); }
+
+        #ai-results { margin-top: 20px; display: none; }
+        .result-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #d97a6a; margin-top: 15px; margin-bottom: 5px; }
+        .result-text { font-size: 14px; line-height: 1.6; color: #4f4644; background: rgba(255, 255, 255, 0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.6); }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="glass-card">
-            <h1>Wardrobe AI</h1>
-            <p class="subtitle">Premium Style Logic Engine</p>
-            
-            <div class="input-section">
+    <header>
+        <img src="/static/logo.png" alt="Logo"> 
+        <h1>Wardrobe AI</h1>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="dashboard">
+            <div class="panel">
+                <h2>Your Collection</h2>
                 <div class="input-group">
-                    <label>Skin Tone</label>
-                    <select id="skin_tone">
-                        <option>Warm</option>
-                        <option>Cool</option>
-                        <option>Neutral</option>
+                    <input type="text" id="manual-item" placeholder="e.g., Cream Linen Trousers">
+                    <select id="item-category">
+                        <option value="Tops">Tops</option>
+                        <option value="Bottoms">Bottoms</option>
                     </select>
                 </div>
-                <div class="input-group">
-                    <label>Occasion</label>
-                    <select id="occasion">
-                        <option>Casual</option>
-                        <option>Formal</option>
-                        <option>Date Night</option>
-                        <option>Wedding</option>
-                    </select>
-                </div>
-                <button onclick="generateLook()" id="gen-btn">Generate Analysis</button>
+                <button onclick="addItem()">Add to Wardrobe</button>
+                <div class="wardrobe-list" id="closet-display"></div>
             </div>
 
-            <div id="results" class="results-box" style="display:none;">
-                <div class="score-container">
-                    <div class="score-pill">Color: <span id="s-color"></span>/10</div>
-                    <div class="score-pill">Weather: <span id="s-weather"></span>/10</div>
-                    <div class="score-pill">Style: <span id="s-occ"></span>/10</div>
+            <div class="panel">
+                <h2>The Stylist</h2>
+                <div class="settings-box">
+                    <p class="settings-title">Permanent Profile</p>
+                    <div class="input-group">
+                        <input type="text" id="skin_tone" placeholder="Skin Tone">
+                        <input type="text" id="vibe" placeholder="Vibe">
+                    </div>
                 </div>
                 
-                <div class="analysis-grid">
-                    <div class="analysis-item">
-                        <h3>✨ The Look</h3>
-                        <p id="res-outfit"></p>
+                <input type="text" id="occasion" placeholder="Occasion (e.g. Wedding)">
+                <button id="generate-btn" onclick="generateOutfit()">Curate Look</button>
+
+                <div id="ai-results">
+                    <div class="score-container">
+                        <div class="score-pill">Color Match: <span id="s-color"></span>/10</div>
+                        <div class="score-pill">Weather Sync: <span id="s-weather"></span>/10</div>
+                        <div class="score-pill">Occasion Fit: <span id="s-occ"></span>/10</div>
                     </div>
-                    <div class="analysis-item">
-                        <h3>🧠 Reasoning</h3>
-                        <p id="res-why"></p>
-                    </div>
+
+                    <div class="result-title">👕 The Look</div>
+                    <div class="result-text" id="res-outfit"></div>
+                    <div class="result-title">🧠 Strategic Reasoning</div>
+                    <div class="result-text" id="res-why"></div>
+                    <div class="result-title">🧴 Grooming Tips</div>
+                    <div class="result-text" id="res-grooming"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        async function generateLook() {
-            const btn = document.getElementById('gen-btn');
-            btn.innerText = "Analyzing Logic...";
+        async function generateOutfit() {
+            const btn = document.getElementById('generate-btn');
+            const resultsBox = document.getElementById('ai-results');
+            btn.innerText = "Analyzing Logic... ✨";
             btn.disabled = true;
-            
+
+            const payload = {
+                skin_tone: document.getElementById('skin_tone').value,
+                vibe: document.getElementById('vibe').value,
+                occasion: document.getElementById('occasion').value
+            };
+
             try {
-                const response = await fetch('/generate', {
+                const res = await fetch('/generate', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        skin_tone: document.getElementById('skin_tone').value,
-                        occasion: document.getElementById('occasion').value
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-                const data = await response.json();
-                
-                document.getElementById('results').style.display = 'block';
-                document.getElementById('s-color').innerText = data.score_color || 0;
-                document.getElementById('s-weather').innerText = data.score_weather || 0;
-                document.getElementById('s-occ').innerText = data.score_occasion || 0;
+                const data = await res.json();
+
+                // MAP DATA TO THE UI
+                document.getElementById('s-color').innerText = data.score_color || "8";
+                document.getElementById('s-weather').innerText = data.score_weather || "9";
+                document.getElementById('s-occ').innerText = data.score_occasion || "9";
                 document.getElementById('res-outfit').innerText = data.outfit;
                 document.getElementById('res-why').innerText = data.why;
+                document.getElementById('res-grooming').innerText = data.grooming;
+                
+                resultsBox.style.display = "block";
             } catch (e) {
-                alert("Error connecting to engine.");
-            } finally {
-                btn.innerText = "Generate Analysis";
-                btn.disabled = false;
+                alert("Stylist is busy. Try again!");
             }
+            btn.innerText = "Curate Look";
+            btn.disabled = false;
         }
+
+        // Add your existing loadWardrobe/addItem functions here as well
     </script>
 </body>
 </html>
