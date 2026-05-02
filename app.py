@@ -7,8 +7,6 @@ import requests
 
 app = Flask(__name__)
 
-# --- RATE LIMITER CONFIGURATION ---
-# This identifies users by their IP address and stores counts in memory.
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -16,14 +14,12 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-# --- CONFIGURATION ---
 API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_LOCAL_TESTING_KEY_HERE") 
-# Updated to the latest stable Gemini 3 Flash for your 2026 build
+
 MODEL = "gemini-3-flash-preview" 
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
 WARDROBE_FILE = "wardrobe.json"
 
-# --- DATABASE HELPERS ---
 def load_wardrobe():
     default_structure = {"Tops": [], "Bottoms": [], "Shoes": [], "Accessories": []}
     if not os.path.exists(WARDROBE_FILE): return default_structure
@@ -40,7 +36,6 @@ def load_wardrobe():
 def save_wardrobe(items):
     with open(WARDROBE_FILE, "w") as f: json.dump({"items": items}, f)
 
-# --- AI HELPER ---
 def call_ai(prompt):
     try:
         response = requests.post(
@@ -63,7 +58,6 @@ def call_ai(prompt):
         print("AI Request Failed:", e)
         return None
 
-# --- WEB ROUTES ---
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -79,7 +73,7 @@ def save_wardrobe_api():
     return jsonify({"status": "Success"})
 
 @app.route("/generate", methods=["POST"])
-@limiter.limit("3 per minute")  # Protects your API key from spamming
+@limiter.limit("3 per minute")  
 def generate_style():
     data = request.json
     wardrobe_dict = load_wardrobe()
@@ -121,7 +115,7 @@ def generate_style():
 
     return jsonify(result)
 
-# Error handler for when a user hits the rate limit
+
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({"error": "Slow down, Rainmaker! You can only curate 3 looks per minute."}), 429
