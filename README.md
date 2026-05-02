@@ -38,6 +38,26 @@ Data Persistence: JSON-based local storage
 
 Deployment: CI/CD via GitHub & Render
 
+🛡️ Security & Performance Optimization
+1. Intelligent Rate Limiting
+To protect the backend infrastructure and manage Google Gemini API quotas, Wardrobe.ai implements a sophisticated rate-limiting layer using Flask-Limiter.
+
+Mechanism: IP-based tracking using the Fixed Window algorithm.
+
+Thresholds: * 3 requests per minute for high-intensity AI generation.
+
+100 requests per day global cap per user.
+
+Purpose: Prevents server exhaustion from automated bot traffic and ensures the Free Tier API limits are not exceeded by individual users.
+
+Graceful Degradation: Users who exceed the limit receive a custom HTTP 429 (Too Many Requests) response with a user-friendly instruction to wait for a cooldown period.
+
+2. Efficient Resource Management
+Persistent Storage: Uses a lightweight JSON-based database (wardrobe.json) to minimize redundant AI calls.
+
+Contextual Prompting: Engineered to send only necessary wardrobe data, reducing token consumption and improving response latency.
+
+
 🧠 Key Learnings
 API Orchestration: Learning how to structure "System Prompts" to return strictly formatted JSON for frontend parsing.
 
