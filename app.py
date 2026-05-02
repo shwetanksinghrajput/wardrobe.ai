@@ -19,7 +19,7 @@ limiter = Limiter(
 # --- CONFIGURATION ---
 API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_LOCAL_TESTING_KEY_HERE") 
 # Updated to the latest stable Gemini 3 Flash for your 2026 build
-MODEL = "gemini-3-flash" 
+MODEL = "gemini-3-flash-preview" 
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
 WARDROBE_FILE = "wardrobe.json"
 
