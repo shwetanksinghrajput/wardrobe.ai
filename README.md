@@ -6,8 +6,8 @@ Wardrobe AI is a full-stack digital stylist that curates outfits from a user's p
 **[Click here to view the live app on Render](https://wardrobe-ai-45ad.onrender.com)** *(Note: As this is hosted on a free tier, please allow ~40 seconds for the server to spin up on initial load.)*
 
 ## 📸 Project Preview
-![Digital Closet & Stylist Input](sitpv1.png)
-![AI Scoring & Strategic Reasoning](sitpv2.png)
+![Digital Closet & Stylist Input](sitepv1.png)
+![AI Scoring & Strategic Reasoning](sitepv2.png)
 
 ---
 
@@ -18,7 +18,6 @@ This application was designed to solve the "Black Box" problem of generative AI 
 2. **Constraint-Based Inference:** The Gemini Pro model is utilized as a reasoning engine, processing the user's specific wardrobe JSON against real-time weather and occasion data.
 3. **Quantitative Scoring Engine:** The output is evaluated on a 1-10 scale across three vectors: Color Harmony, Weather Suitability, and Occasion Fit, providing the user with data-driven confidence.
 
-```mermaid
 graph TD
     A[User Profile: Skin/Body/Vibe] --> B[Python Expert Rules]
     C[Environment: Weather/Occasion] --> B
