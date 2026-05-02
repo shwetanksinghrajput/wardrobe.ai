@@ -6,8 +6,8 @@ Wardrobe AI is a full-stack digital stylist that curates outfits from a user's p
 **[Click here to view the live app on Render](https://wardrobe-ai-45ad.onrender.com)** *(Note: As this is hosted on a free tier, please allow ~40 seconds for the server to spin up on initial load.)*
 
 ## 📸 Project Preview
-![Digital Closet & Stylist Input](sitepv1.png)
-![AI Scoring & Strategic Reasoning](sitepv2.png)
+![Digital Closet & Stylist Input](static/sitepv1.png)
+![AI Scoring & Strategic Reasoning](static/sitepv2.png)
 
 ---
 
