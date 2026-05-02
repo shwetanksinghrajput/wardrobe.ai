@@ -1,14 +1,25 @@
 from flask import Flask, render_template, request, jsonify
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import json
 import os
 import requests
 
 app = Flask(__name__)
 
+# --- RATE LIMITER CONFIGURATION ---
+# This identifies users by their IP address and stores counts in memory.
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["100 per day", "20 per hour"],
+    storage_uri="memory://",
+)
+
 # --- CONFIGURATION ---
-# Replace Plan B with your real AIzaSy... key for local testing.
 API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_LOCAL_TESTING_KEY_HERE") 
-MODEL = "gemini-3-flash-preview"
+# Updated to the latest stable Gemini 3 Flash for your 2026 build
+MODEL = "gemini-3-flash" 
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
 WARDROBE_FILE = "wardrobe.json"
 
@@ -19,7 +30,6 @@ def load_wardrobe():
     try:
         with open(WARDROBE_FILE, "r") as f:
             data = json.load(f)
-            # Migration: If it's the old flat list, put everything in 'Tops'
             if isinstance(data.get("items"), list):
                 old_list = data.get("items", [])
                 return {"Tops": old_list, "Bottoms": [], "Shoes": [], "Accessories": []}
@@ -69,6 +79,7 @@ def save_wardrobe_api():
     return jsonify({"status": "Success"})
 
 @app.route("/generate", methods=["POST"])
+@limiter.limit("3 per minute")  # Protects your API key from spamming
 def generate_style():
     data = request.json
     wardrobe_dict = load_wardrobe()
@@ -94,26 +105,27 @@ def generate_style():
     Weather: {weather}
     User profile -> Skin tone: {skin_tone}, Body Type: {body_type}, Style vibe: {vibe}
 
-    Return ONLY JSON matching this format exactly. DO NOT use markdown, just raw JSON:
+    Return ONLY JSON matching this format exactly:
     {{
-      "best_outfit": "Detailed description of the best outfit combination",
+      "best_outfit": "Detailed description",
       "color_palette": ["#HEXCODE1", "#HEXCODE2", "#HEXCODE3"],
-      "why_it_works": "Why these colors match the skin tone and occasion",
-      "perfume": "Fragrance type suggestion",
-      "skincare_tip": "One quick grooming/skincare tip"
+      "why_it_works": "Reasoning",
+      "perfume": "Fragrance suggestion",
+      "skincare_tip": "Grooming tip"
     }}
-    Rules: 
-    - Use ONLY items from the provided Wardrobe for the outfit.
-    - color_palette MUST contain exactly 3 or 4 valid hex color codes representing the outfit (e.g., ["#000080", "#F5F5DC", "#FFFFFF"]). Do not leave this empty.
     """
 
     result = call_ai(prompt)
-    
     if not result:
         return jsonify({"error": "AI is thinking too hard. Try again!"})
 
     return jsonify(result)
 
+# Error handler for when a user hits the rate limit
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({"error": "Slow down, Rainmaker! You can only curate 3 looks per minute."}), 429
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port)
